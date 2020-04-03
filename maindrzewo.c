@@ -5,7 +5,7 @@
 #include <signal.h>
 #include <time.h>
 
-unsigned int ns[] = { 10, 1000 /* TODO: fill values which will be used as lists' sizes */ };
+unsigned int ns[] = { 30000 /* TODO: fill values which will be used as lists' sizes */ };
 
 
 struct node {
@@ -19,10 +19,14 @@ struct node *root = NULL;
 
 struct node **tree_search(struct node **candidate, int value) {
     //def tree_search(nodeptr, value)
+    if(*candidate==NULL)
+    {
+        return candidate;
+    }
     if (value < ((*candidate)->key)) // jesli value jest mniejsza od liscia
-        return tree_search((*candidate)->left, value);//to wyszukaj w lewej galezi bo tam sa mniejsze wartosci
+        return tree_search(&(*candidate)->left, value);//to wyszukaj w lewej galezi bo tam sa mniejsze wartosci
     if (value > ((*candidate)->key))//jesli value jest wieksza od liscia
-        return tree_search((*candidate)->right, value);// to wyszukaj w prawej galezi bo tam sa wieksze wartosci
+        return tree_search(&(*candidate)->right, value);// to wyszukaj w prawej galezi bo tam sa wieksze wartosci
     return candidate;
     // TODO: implement
     //return NULL;
@@ -30,11 +34,12 @@ struct node **tree_search(struct node **candidate, int value) {
 
 struct node* tree_insert(int value) {
     //def tree_insert(value)
-    struct node *nodeptr = malloc(sizeof(nodeptr));; // stworz pomocnicza strukture
-    nodeptr = tree_search(&root, value); // wyszukaj miejsce gdzie pasuje value
+     struct node *nodeptr = malloc(sizeof(struct node));; // stworz pomocnicza strukture
     nodeptr->key = value;
     nodeptr->left = NULL;
     nodeptr->right = NULL;
+    struct node **candidate = tree_search(&root, value); // wyszukaj miejsce gdzie pasuje value
+    *candidate = nodeptr;
      //createNode(key ← value, left ← null, right ← null)
     // TODO: implement
     return NULL;
@@ -45,7 +50,7 @@ struct node* tree_insert(int value) {
 struct node **tree_maximum(struct node **candidate) {
     //def tree_maximum(nodeptr)
     if (((*candidate)->right) != NULL) // jesli jest cos po prawej stronie w wezle to znaczy ze dana wartosc nie byla najwieksza
-        return tree_maximum((*candidate)->right);// wiec sprawdz czy ta prawa jest najwieksza..
+        return tree_maximum(&(*candidate)->right);// wiec sprawdz czy ta prawa jest najwieksza..
     return (candidate);
     // TODO: implement
     //return NULL;
@@ -53,24 +58,27 @@ struct node **tree_maximum(struct node **candidate) {
 
 void tree_delete(int value) {
     //def tree_delete(value)
-    struct node *nodeptr = malloc(sizeof(nodeptr));
-    nodeptr = tree_search(&root, value);//znajdujemy wskaznik na dane value
+
+    struct node **candidate = tree_search(&root, value);//znajdujemy wskaznik na dane value
+    struct node *nodeptr = *candidate;
     if ((nodeptr->left) == NULL && (nodeptr->right) == NULL) //jesli nie ma prawego ani leego dziecka
-        nodeptr = NULL; // to po prostu bez konsekwencji usuwamy sobie
+        *candidate = NULL; // to po prostu bez konsekwencji usuwamy sobie
     else if ((nodeptr->left) != NULL && (nodeptr->right) == NULL) // jesli lewe mlodsze dziecko jest, ale nie ma starszego
-        nodeptr = nodeptr->left; // to zamiast usuwanego elementu wstawimy lewe dziecko
+        *candidate = nodeptr->left; // to zamiast usuwanego elementu wstawimy lewe dziecko
     else if ((nodeptr->left) == NULL && (nodeptr->right) != NULL) // jesli prawe starsze dziekco jest,
-        nodeptr = nodeptr->right; // to zamiast usuwanego wpisujemy prawe
+        *candidate = nodeptr->right; // to zamiast usuwanego wpisujemy prawe
     else // jesli mamy oba liscie
         {
-        struct node *maxnodeptr = malloc(sizeof(maxnodeptr));
-        maxnodeptr = tree_maximum(nodeptr->left); // to znajdujemy najwiekszy element w drzewku z lewej strony i wpisujemy go w wskaznik max
-        nodeptr->key = maxnodeptr->key; // usuwamy value wpisujac zamiast niego max element z lewej storny
-        maxnodeptr = maxnodeptr->left; // max element z lewej strony wpisujemy lewy jego element czyli null??
+
+        struct node **maxcandidate= tree_maximum(&nodeptr->left); // to znajdujemy najwiekszy element w drzewku z lewej strony i wpisujemy go w wskaznik max
+        struct node *maxnodeptr = *maxcandidate;
+       // *candidate->key = *maxcandidate->key; // usuwamy value wpisujac zamiast niego max element z lewej storny
+         nodeptr->key = maxnodeptr->key; // ???
+         *maxcandidate = maxnodeptr->left; // max element z lewej strony wpisujemy lewy jego element czyli null??
         }
     // TODO: implement
 }
-unsigned int tree_rozmiar(struct node *element)
+/*unsigned int tree_rozmiar(struct node *element)
 {
     int size = 0;
     if (element->right != NULL)
@@ -85,11 +93,17 @@ unsigned int tree_rozmiar(struct node *element)
     }
     return size;
 }
-
+*/
 unsigned int tree_size(struct node *element) {
-//if (element = NULL) size = 0;
-//else {1 + tree_size(left) + tree_size(right)}
-    return (tree_rozmiar(element) + 1);
+if (element == NULL)
+{
+    return 0;
+}
+else
+{
+    return 1 + tree_size(element->left) + tree_size(element->right);
+}
+ //   return (tree_rozmiar(element) + 1);
 // TODO: implement
    // return 0;
 }
@@ -174,7 +188,7 @@ void tree_insert_biject(int *t, int p, int r) {
     //def tree_insert_biject(t, p, r)
     if (p == r)
         tree_insert(t[p]);
-    if ((r - p) == 1)
+    else if ((r - p) == 1)
         {
         tree_insert(t[p]);
         tree_insert(t[r]);
